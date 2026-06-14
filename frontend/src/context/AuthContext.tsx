@@ -8,7 +8,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Local storage keys
 const USER_STORAGE_KEY = 'business_nexus_user';
+const TOKEN_KEY = "business_nexus_token";
 const RESET_TOKEN_KEY = 'business_nexus_reset_token';
+
+// Fetch the base URL from .env file
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Auth Provider Component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -25,23 +29,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Mock login function - in a real app, this would make an API call
-  const login = async (email: string, password: string, role: UserRole): Promise<void> => {
+  const login = async (
+    email: string,
+    password: string,
+    role: UserRole,
+  ): Promise<void> => {
     setIsLoading(true);
-    
+
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Find user with matching email and role
-      const foundUser = users.find(u => u.email === email && u.role === role);
-      
-      if (foundUser) {
-        setUser(foundUser);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(foundUser));
-        toast.success('Successfully logged in!');
-      } else {
-        throw new Error('Invalid credentials or user not found');
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Invalid credentials");
       }
+
+      // Check against UI role selection
+      if (data.user.role !== role) {
+        throw new Error("Role mismatch. Please select the correct role tab.");
+      }
+
+      // State and Storage Update
+      setUser(data.user);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+      localStorage.setItem(TOKEN_KEY, data.token); // <-- CRITICAL: Token saved!
+
+      toast.success("Successfully logged in!");
     } catch (error) {
       toast.error((error as Error).message);
       throw error;
@@ -50,37 +68,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Mock register function - in a real app, this would make an API call
-  const register = async (name: string, email: string, password: string, role: UserRole): Promise<void> => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    role: UserRole,
+  ): Promise<void> => {
     setIsLoading(true);
-    
+
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if email already exists
-      if (users.some(u => u.email === email)) {
-        throw new Error('Email already in use');
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Registration failed");
       }
+
+      toast.success("Account created successfully! Please login.");
       
-      // Create new user
-      const newUser: User = {
-        id: `${role[0]}${users.length + 1}`,
-        name,
-        email,
-        role,
-        avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-        bio: '',
-        isOnline: true,
-        createdAt: new Date().toISOString()
-      };
-      
-      // Add user to mock data
-      users.push(newUser);
-      
-      setUser(newUser);
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
-      toast.success('Account created successfully!');
     } catch (error) {
       toast.error((error as Error).message);
       throw error;
@@ -138,31 +148,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = (): void => {
     setUser(null);
     localStorage.removeItem(USER_STORAGE_KEY);
-    toast.success('Logged out successfully');
+    localStorage.removeItem(TOKEN_KEY); // <-- Token removed from browser
+    toast.success("Logged out successfully");
   };
 
   // Update user profile
-  const updateProfile = async (userId: string, updates: Partial<User>): Promise<void> => {
+  const updateProfile = async (
+    userId: string,
+    updates: Partial<User>,
+  ): Promise<void> => {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update user in mock data
-      const userIndex = users.findIndex(u => u.id === userId);
-      if (userIndex === -1) {
-        throw new Error('User not found');
+      const token = localStorage.getItem(TOKEN_KEY);
+
+      const response = await fetch(`${API_URL}/auth/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // <-- Sending the secure token
+        },
+        body: JSON.stringify(updates),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update profile");
       }
-      
-      const updatedUser = { ...users[userIndex], ...updates };
-      users[userIndex] = updatedUser;
-      
-      // Update current user if it's the same user
-      if (user?.id === userId) {
-        setUser(updatedUser);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
-      }
-      
-      toast.success('Profile updated successfully');
+
+      // Update state if success
+      const updatedUser = { ...user, ...data.profile };
+      setUser(updatedUser as User);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
+
+      toast.success("Profile updated successfully");
     } catch (error) {
       toast.error((error as Error).message);
       throw error;

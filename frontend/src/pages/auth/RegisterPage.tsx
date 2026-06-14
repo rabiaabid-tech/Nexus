@@ -1,3 +1,4 @@
+// src/pages/auth/RegisterPage.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, CircleDollarSign, Building2, AlertCircle } from 'lucide-react';
@@ -11,7 +12,7 @@ export const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('entrepreneur');
+  const [role, setRole] = useState<UserRole>('Entrepreneur');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -33,7 +34,7 @@ export const RegisterPage: React.FC = () => {
     try {
       await register(name, email, password, role);
       // Redirect based on user role
-      navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
+      navigate(role === 'Entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
     } catch (err) {
       setError((err as Error).message);
       setIsLoading(false);
@@ -77,11 +78,11 @@ export const RegisterPage: React.FC = () => {
                 <button
                   type="button"
                   className={`py-3 px-4 border rounded-md flex items-center justify-center transition-colors ${
-                    role === 'entrepreneur'
+                    role === 'Entrepreneur'
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
-                  onClick={() => setRole('entrepreneur')}
+                  onClick={() => setRole('Entrepreneur')}
                 >
                   <Building2 size={18} className="mr-2" />
                   Entrepreneur
@@ -90,11 +91,11 @@ export const RegisterPage: React.FC = () => {
                 <button
                   type="button"
                   className={`py-3 px-4 border rounded-md flex items-center justify-center transition-colors ${
-                    role === 'investor'
+                    role === 'Investor'
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
-                  onClick={() => setRole('investor')}
+                  onClick={() => setRole('Investor')}
                 >
                   <CircleDollarSign size={18} className="mr-2" />
                   Investor

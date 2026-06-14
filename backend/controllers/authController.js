@@ -47,14 +47,55 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // 7. Insert User into Database
+    const initials = name
+      .trim()
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+
+  
+    const avatarUrl = `https://ui-avatars.com/api/?name=${initials}&background=random`;
+
     const newUser = await pool.query(
-      "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
-      [name, email, hashedPassword, role],
+      "INSERT INTO users (name, email, password, role, avatar_url) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role",
+      [name, email, hashedPassword, role, avatarUrl],
     );
 
-    res
-      .status(201)
-      .json({ message: "User registered successfully", user: newUser.rows[0] });
+    const userId = newUser.rows[0].id;
+
+    // 8. Create Role-Specific Profile with Safe Defaults
+    if (role === "Entrepreneur") {
+      await pool.query(
+        "INSERT INTO entrepreneur_profiles (user_id, startup_name, industry) VALUES ($1, $2, $3)",
+        [userId, "New Startup", "Not Specified"], // Safe default strings
+      );
+    } else if (role === "Investor") {
+      await pool.query(
+        "INSERT INTO investor_profiles (user_id, investment_interests, investment_stage, portfolio_companies) VALUES ($1, '{}', '{}', '{}')",
+        [userId],
+      );
+    }
+    const token = jwt.sign(
+      { id: userId, role: newUser.rows[0].role },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "30d",
+      },
+    );
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: {
+        id: userId,
+        name: newUser.rows[0].name,
+        email: newUser.rows[0].email,
+        role: newUser.rows[0].role,
+        avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+      },
+      token,
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: "Server error during registration." });
@@ -116,6 +157,9 @@ const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatarUrl:
+          user.avatar_url ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`,
       },
     });
   } catch (err) {
@@ -124,20 +168,45 @@ const loginUser = async (req, res) => {
   }
 };
 
-// Get User Profile
+// Get User Profile with Role-specific data
 const getProfile = async (req, res) => {
     try {
-        // req.user.id comes from the JWT token via the protect middleware
+        // 1.Fetch basic user info from users table
         const userResult = await pool.query(
-            "SELECT id, name, email, role, bio, history, preferences FROM users WHERE id = $1", 
-            [req.user.id]
+          'SELECT id, name, email, role, avatar_url AS "avatarUrl", is_online AS "isOnline" FROM users WHERE id = $1',
+          [req.user.id],
         );
         
         if (userResult.rows.length === 0) {
             return res.status(404).json({ error: "User not found." });
         }
         
-        res.status(200).json(userResult.rows[0]);
+        const baseUser = userResult.rows[0];
+
+        // 2. Fetch role-specific profile data
+        let profileData = {};
+        
+        if (baseUser.role === 'Entrepreneur') {
+            const entResult = await pool.query(
+                "SELECT startup_name, pitch_summary, funding_needed, industry, location, founded_year, team_size FROM entrepreneur_profiles WHERE user_id = $1",
+                [req.user.id]
+            );
+            if (entResult.rows.length > 0) {
+                profileData = entResult.rows[0];
+            }
+        } else if (baseUser.role === 'Investor') {
+            const invResult = await pool.query(
+                "SELECT investment_interests, investment_stage, portfolio_companies, total_investments, minimum_investment, maximum_investment FROM investor_profiles WHERE user_id = $1",
+                [req.user.id]
+            );
+            if (invResult.rows.length > 0) {
+                profileData = invResult.rows[0];
+            }
+        }
+
+        // 3. Combine base user info with role-specific profile data and send response
+        res.status(200).json({ ...baseUser, ...profileData });
+        
     } catch (err) {
         console.error(err.message);
         res.status(500).json({ error: "Server error fetching profile." });

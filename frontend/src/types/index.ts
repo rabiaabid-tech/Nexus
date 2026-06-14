@@ -1,4 +1,5 @@
-export type UserRole = 'entrepreneur' | 'investor';
+// index.ts
+export type UserRole = 'Entrepreneur' | 'Investor';
 
 export interface User {
   id: string;
@@ -12,7 +13,7 @@ export interface User {
 }
 
 export interface Entrepreneur extends User {
-  role: 'entrepreneur';
+  role: 'Entrepreneur';
   startupName: string;
   pitchSummary: string;
   fundingNeeded: string;
@@ -23,7 +24,7 @@ export interface Entrepreneur extends User {
 }
 
 export interface Investor extends User {
-  role: 'investor';
+  role: 'Investor';
   investmentInterests: string[];
   investmentStage: string[];
   portfolioCompanies: string[];

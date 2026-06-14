@@ -9,7 +9,7 @@ import { UserRole } from '../../types';
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('entrepreneur');
+  const [role, setRole] = useState<UserRole>('Entrepreneur');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -24,7 +24,7 @@ export const LoginPage: React.FC = () => {
     try {
       await login(email, password, role);
       // Redirect based on user role
-      navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
+      navigate(role === 'Entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
     } catch (err) {
       setError((err as Error).message);
       setIsLoading(false);
@@ -33,7 +33,7 @@ export const LoginPage: React.FC = () => {
   
   // For demo purposes, pre-filled credentials
   const fillDemoCredentials = (userRole: UserRole) => {
-    if (userRole === 'entrepreneur') {
+    if (userRole === 'Entrepreneur') {
       setEmail('sarah@techwave.io');
       setPassword('password123');
     } else {
@@ -80,11 +80,11 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   className={`py-3 px-4 border rounded-md flex items-center justify-center transition-colors ${
-                    role === 'entrepreneur'
+                    role === 'Entrepreneur'
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
-                  onClick={() => setRole('entrepreneur')}
+                  onClick={() => setRole('Entrepreneur')}
                 >
                   <Building2 size={18} className="mr-2" />
                   Entrepreneur
@@ -93,11 +93,11 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   className={`py-3 px-4 border rounded-md flex items-center justify-center transition-colors ${
-                    role === 'investor'
+                    role === 'Investor'
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
                       : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
-                  onClick={() => setRole('investor')}
+                  onClick={() => setRole('Investor')}
                 >
                   <CircleDollarSign size={18} className="mr-2" />
                   Investor
@@ -167,7 +167,7 @@ export const LoginPage: React.FC = () => {
             <div className="mt-4 grid grid-cols-2 gap-3">
               <Button
                 variant="outline"
-                onClick={() => fillDemoCredentials('entrepreneur')}
+                onClick={() => fillDemoCredentials('Entrepreneur')}
                 leftIcon={<Building2 size={16} />}
               >
                 Entrepreneur Demo
@@ -175,7 +175,7 @@ export const LoginPage: React.FC = () => {
               
               <Button
                 variant="outline"
-                onClick={() => fillDemoCredentials('investor')}
+                onClick={() => fillDemoCredentials('Investor')}
                 leftIcon={<CircleDollarSign size={16} />}
               >
                 Investor Demo
