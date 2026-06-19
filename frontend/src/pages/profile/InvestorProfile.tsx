@@ -1,5 +1,5 @@
 // InvestorProfile.tsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   MessageCircle,
@@ -19,13 +19,54 @@ export const InvestorProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user: currentUser } = useAuth();
 
-  if (!currentUser || currentUser.role !== "Investor") {
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // REAL DATA FETCHING LOGIC
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("business_nexus_token");
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/users/profile/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setProfile(data);
+        } else {
+          console.error("Failed to fetch profile");
+        }
+      } catch (error) {
+        console.error("Network error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) fetchProfile();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Strict check against the FETCHED profile, not the logged-in user
+  if (!profile || profile.role !== "Investor") {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold text-gray-900">Investor not found</h2>
         <p className="text-gray-600 mt-2">
-          The investor profile you're looking for doesn't exist or has been
-          removed.
+          The profile you're looking for doesn't exist.
         </p>
         <Link to="/dashboard/entrepreneur">
           <Button variant="outline" className="mt-4">
@@ -37,7 +78,6 @@ export const InvestorProfile: React.FC = () => {
   }
 
   // Safe Data Extraction
-  const profile = currentUser as any;
   const name = profile.name || "Unknown";
   const avatarUrl = profile.avatarUrl || profile.avatar_url;
   const isOnline = profile.isOnline || profile.is_online || false;
@@ -58,7 +98,8 @@ export const InvestorProfile: React.FC = () => {
   const maximumInvestment =
     profile.maximumInvestment || profile.maximum_investment || "Not Specified";
 
-  const isCurrentUser = true;
+  // LOGIC: Is the person viewing this page the owner of the profile? Type conflict strictly resolved.
+  const isCurrentUser = String(currentUser?.id) === String(id);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -103,9 +144,11 @@ export const InvestorProfile: React.FC = () => {
             )}
 
             {isCurrentUser && (
-              <Button variant="outline" leftIcon={<UserCircle size={18} />}>
-                Edit Profile
-              </Button>
+              <Link to="/settings">
+                <Button variant="outline" leftIcon={<UserCircle size={18} />}>
+                  Edit Profile
+                </Button>
+              </Link>
             )}
           </div>
         </CardBody>
@@ -138,11 +181,13 @@ export const InvestorProfile: React.FC = () => {
                     Industries
                   </h3>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {investmentInterests.map((interest: string, index: number) => (
-                      <Badge key={index} variant="primary" size="md">
-                        {interest}
-                      </Badge>
-                    ))}
+                    {investmentInterests.map(
+                      (interest: string, index: number) => (
+                        <Badge key={index} variant="primary" size="md">
+                          {interest}
+                        </Badge>
+                      ),
+                    )}
                   </div>
                 </div>
 

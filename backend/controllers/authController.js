@@ -1,6 +1,8 @@
+//authController.js
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const pool = require("../database");
+require("dotenv").config(); // CRITICAL: Added this to ensure JWT_SECRET is loaded in this file
 
 const registerUser = async (req, res) => {
   try {
@@ -24,7 +26,7 @@ const registerUser = async (req, res) => {
         .json({ error: "Password must be at least 6 characters long." });
     }
 
-    // 4. Role Validation (Strictly enforcing document requirements)
+    // 4. Role Validation
     if (role !== "Investor" && role !== "Entrepreneur") {
       return res
         .status(400)
@@ -55,7 +57,6 @@ const registerUser = async (req, res) => {
       .substring(0, 2)
       .toUpperCase();
 
-  
     const avatarUrl = `https://ui-avatars.com/api/?name=${initials}&background=random`;
 
     const newUser = await pool.query(
@@ -69,7 +70,7 @@ const registerUser = async (req, res) => {
     if (role === "Entrepreneur") {
       await pool.query(
         "INSERT INTO entrepreneur_profiles (user_id, startup_name, industry) VALUES ($1, $2, $3)",
-        [userId, "New Startup", "Not Specified"], // Safe default strings
+        [userId, "New Startup", "Not Specified"],
       );
     } else if (role === "Investor") {
       await pool.query(
@@ -106,44 +107,36 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Basic Validation
     if (!email || !password) {
       return res
         .status(400)
         .json({ error: "Email and password are required." });
     }
-    // 2. Email Format Validation
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      // Reject completely malformed emails before hitting the DB
       return res.status(400).json({ error: "Invalid email format." });
     }
 
-    // 3. Early Exit for impossible passwords
     if (password.length < 6) {
-      // If it's less than 6 chars, it can't possibly exist in our system anyway.
-      // But we keep the message generic to prevent password profiling.
       return res.status(400).json({ error: "Invalid credentials." });
     }
 
-    // 4. Check if user exists
     const userResult = await pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email],
     );
     if (userResult.rows.length === 0) {
-      return res.status(400).json({ error: "Invalid credentials." }); // Don't specify 'email not found' for security
+      return res.status(400).json({ error: "Invalid credentials." });
     }
 
     const user = userResult.rows[0];
 
-    // 5. Compare Password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: "Invalid credentials." });
     }
 
-    // 6. Generate JWT Token
     const payload = { id: user.id, role: user.role };
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "1d",
@@ -168,68 +161,115 @@ const loginUser = async (req, res) => {
   }
 };
 
-// Get User Profile with Role-specific data
 const getProfile = async (req, res) => {
-    try {
-        // 1.Fetch basic user info from users table
-        const userResult = await pool.query(
-          'SELECT id, name, email, role, avatar_url AS "avatarUrl", is_online AS "isOnline" FROM users WHERE id = $1',
-          [req.user.id],
-        );
-        
-        if (userResult.rows.length === 0) {
-            return res.status(404).json({ error: "User not found." });
-        }
-        
-        const baseUser = userResult.rows[0];
+  try {
+    const userResult = await pool.query(
+      'SELECT id, name, email, role, avatar_url AS "avatarUrl", bio, is_online AS "isOnline" FROM users WHERE id = $1',
+      [req.user.id],
+    );
 
-        // 2. Fetch role-specific profile data
-        let profileData = {};
-        
-        if (baseUser.role === 'Entrepreneur') {
-            const entResult = await pool.query(
-                "SELECT startup_name, pitch_summary, funding_needed, industry, location, founded_year, team_size FROM entrepreneur_profiles WHERE user_id = $1",
-                [req.user.id]
-            );
-            if (entResult.rows.length > 0) {
-                profileData = entResult.rows[0];
-            }
-        } else if (baseUser.role === 'Investor') {
-            const invResult = await pool.query(
-                "SELECT investment_interests, investment_stage, portfolio_companies, total_investments, minimum_investment, maximum_investment FROM investor_profiles WHERE user_id = $1",
-                [req.user.id]
-            );
-            if (invResult.rows.length > 0) {
-                profileData = invResult.rows[0];
-            }
-        }
-
-        // 3. Combine base user info with role-specific profile data and send response
-        res.status(200).json({ ...baseUser, ...profileData });
-        
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: "Server error fetching profile." });
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found." });
     }
+
+    const baseUser = userResult.rows[0];
+
+    let profileData = {};
+
+    if (baseUser.role === "Entrepreneur") {
+      const entResult = await pool.query(
+        'SELECT startup_name AS "startupName", pitch_summary AS "pitchSummary", funding_needed AS "fundingNeeded", industry, location, founded_year AS "foundedYear", team_size AS "teamSize" FROM entrepreneur_profiles WHERE user_id = $1',
+        [req.user.id],
+      );
+      if (entResult.rows.length > 0) {
+        profileData = entResult.rows[0];
+      }
+    } else if (baseUser.role === "Investor") {
+      const invResult = await pool.query(
+        'SELECT investment_interests AS "investmentInterests", investment_stage AS "investmentStage", portfolio_companies AS "portfolioCompanies", minimum_investment AS "minimumInvestment", maximum_investment AS "maximumInvestment" FROM investor_profiles WHERE user_id = $1',
+        [req.user.id],
+      );
+      if (invResult.rows.length > 0) {
+        profileData = invResult.rows[0];
+      }
+    }
+
+    res.status(200).json({ ...baseUser, ...profileData });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Server error fetching profile." });
+  }
 };
 
-// Update User Profile
+// dynamic updateProfile function
 const updateProfile = async (req, res) => {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
     try {
-        const { bio, history, preferences } = req.body;
-        
-        const updatedUser = await pool.query(
-            "UPDATE users SET bio = $1, history = $2, preferences = $3 WHERE id = $4 RETURNING id, name, email, role, bio, history, preferences",
-            [bio, history, preferences, req.user.id]
+        const {
+            name, bio, avatarUrl, 
+            startupName, industry, location, foundedYear, teamSize, pitchSummary, fundingNeeded,
+            investmentInterests, investmentStage, portfolioCompanies, minimumInvestment, maximumInvestment
+        } = req.body;
+
+        // SANITIZATION HELPER: Converts empty strings "" to null for PostgreSQL strict integer/numeric columns
+        const cleanNum = (val) => (val === "" || val === undefined) ? null : val;
+
+        // 1. Update Base User Table
+        await pool.query(
+            "UPDATE users SET name = COALESCE($1, name), bio = COALESCE($2, bio), avatar_url = COALESCE($3, avatar_url) WHERE id = $4",
+            [name, bio, avatarUrl, userId]
         );
 
-        res.status(200).json({
-            message: "Profile updated successfully",
-            profile: updatedUser.rows[0]
-        });
+        // 2. Update Role-Specific Tables
+        if (userRole === 'Entrepreneur') {
+            await pool.query(
+                `UPDATE entrepreneur_profiles 
+                 SET startup_name = COALESCE($1, startup_name), 
+                     industry = COALESCE($2, industry), 
+                     location = COALESCE($3, location), 
+                     founded_year = COALESCE($4, founded_year), 
+                     team_size = COALESCE($5, team_size), 
+                     pitch_summary = COALESCE($6, pitch_summary), 
+                     funding_needed = COALESCE($7, funding_needed)
+                 WHERE user_id = $8`,
+                [
+                    startupName, 
+                    industry, 
+                    location, 
+                    cleanNum(foundedYear),   // Sanitized
+                    cleanNum(teamSize),      // Sanitized
+                    pitchSummary, 
+                    cleanNum(fundingNeeded), // Sanitized
+                    userId
+                ]
+            );
+        } else if (userRole === 'Investor') {
+            await pool.query(
+                `UPDATE investor_profiles 
+                 SET investment_interests = COALESCE($1, investment_interests), 
+                     investment_stage = COALESCE($2, investment_stage), 
+                     portfolio_companies = COALESCE($3, portfolio_companies), 
+                     minimum_investment = COALESCE($4, minimum_investment), 
+                     maximum_investment = COALESCE($5, maximum_investment)
+                 WHERE user_id = $6`,
+                [
+                    investmentInterests ? investmentInterests : null, 
+                    investmentStage ? investmentStage : null, 
+                    portfolioCompanies ? portfolioCompanies : null, 
+                    cleanNum(minimumInvestment), // Sanitized
+                    cleanNum(maximumInvestment), // Sanitized
+                    userId
+                ]
+            );
+        }
+
+        res.status(200).json({ message: "Profile updated successfully in the database." });
+
     } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: "Server error updating profile." });
+        console.error("Update Profile Error: ", err.message);
+        res.status(500).json({ error: "Server error during profile update." });
     }
 };
 

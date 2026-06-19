@@ -1,5 +1,4 @@
-// EntrepreneurProfile.tsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   MessageCircle,
@@ -22,16 +21,56 @@ export const EntrepreneurProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user: currentUser } = useAuth();
 
-  // Strict role check first
-  if (!currentUser || currentUser.role !== "Entrepreneur") {
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // REAL DATA FETCHING LOGIC
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("business_nexus_token");
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/users/profile/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setProfile(data);
+        } else {
+          console.error("Failed to fetch profile");
+        }
+      } catch (error) {
+        console.error("Network error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) fetchProfile();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Strict role check against the FETCHED profile, not the logged-in user
+  if (!profile || profile.role !== "Entrepreneur") {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold text-gray-900">
           Entrepreneur not found
         </h2>
         <p className="text-gray-600 mt-2">
-          The entrepreneur profile you're looking for doesn't exist or has been
-          removed.
+          The profile you're looking for doesn't exist.
         </p>
         <Link to="/dashboard/investor">
           <Button variant="outline" className="mt-4">
@@ -42,13 +81,11 @@ export const EntrepreneurProfile: React.FC = () => {
     );
   }
 
-  // Safe Data Extraction: Bridging the gap between DB snake_case and Frontend camelCase
-  const profile = currentUser as any;
+  // Safe Data Extraction
   const name = profile.name || "Unknown";
   const avatarUrl = profile.avatarUrl || profile.avatar_url;
   const isOnline = profile.isOnline || profile.is_online || false;
   const bio = profile.bio || "Bio not provided yet.";
-
   const startupName =
     profile.startupName || profile.startup_name || "Startup Details Pending";
   const industry = profile.industry || "Not Specified";
@@ -62,8 +99,9 @@ export const EntrepreneurProfile: React.FC = () => {
   const fundingNeeded =
     profile.fundingNeeded || profile.funding_needed || "Not Specified";
 
-  const isCurrentUser = true;
-  const isInvestor = profile.role === "Investor";
+  // LOGIC: Is the person viewing this page the owner of the profile?
+  const isCurrentUser = String(currentUser?.id) === String(id);
+  const isInvestor = currentUser?.role === "Investor";
   const hasRequestedCollaboration = false;
 
   const handleSendRequest = () => {
@@ -85,9 +123,7 @@ export const EntrepreneurProfile: React.FC = () => {
             />
 
             <div className="mt-4 sm:mt-0 text-center sm:text-left">
-              <h1 className="text-2xl font-bold text-gray-900">
-                {name}
-              </h1>
+              <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
               <p className="text-gray-600 flex items-center justify-center sm:justify-start mt-1">
                 <Building2 size={16} className="mr-1" />
                 Founder at {startupName}
@@ -138,9 +174,11 @@ export const EntrepreneurProfile: React.FC = () => {
             )}
 
             {isCurrentUser && (
-              <Button variant="outline" leftIcon={<UserCircle size={18} />}>
-                Edit Profile
-              </Button>
+              <Link to="/settings">
+                <Button variant="outline" leftIcon={<UserCircle size={18} />}>
+                  Edit Profile
+                </Button>
+              </Link>
             )}
           </div>
         </CardBody>
@@ -181,9 +219,7 @@ export const EntrepreneurProfile: React.FC = () => {
                   <h3 className="text-md font-medium text-gray-900">
                     Solution
                   </h3>
-                  <p className="text-gray-700 mt-1">
-                    {pitchSummary}
-                  </p>
+                  <p className="text-gray-700 mt-1">{pitchSummary}</p>
                 </div>
 
                 <div>
@@ -191,10 +227,9 @@ export const EntrepreneurProfile: React.FC = () => {
                     Market Opportunity
                   </h3>
                   <p className="text-gray-700 mt-1">
-                    The {industry} market is experiencing
-                    significant growth, with a projected CAGR of 14.5% through
-                    2027. Our solution addresses key pain points in this
-                    expanding market.
+                    The {industry} market is experiencing significant growth,
+                    with a projected CAGR of 14.5% through 2027. Our solution
+                    addresses key pain points in this expanding market.
                   </p>
                 </div>
 
@@ -216,9 +251,7 @@ export const EntrepreneurProfile: React.FC = () => {
           <Card>
             <CardHeader className="flex justify-between items-center">
               <h2 className="text-lg font-medium text-gray-900">Team</h2>
-              <span className="text-sm text-gray-500">
-                {teamSize} members
-              </span>
+              <span className="text-sm text-gray-500">{teamSize} members</span>
             </CardHeader>
             <CardBody>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -4,6 +4,7 @@ const compression = require('compression');
 require('dotenv').config();
 const pool = require('./database');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require("./routes/userRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,6 +21,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use("/api/users", userRoutes);
 
 // Basic Test Route
 app.get('/', (req, res) => {

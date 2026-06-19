@@ -8,13 +8,56 @@ import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { EntrepreneurCard } from '../../components/entrepreneur/EntrepreneurCard';
 import { useAuth } from '../../context/AuthContext';
-import { entrepreneurs } from '../../data/users';
 import { getRequestsFromInvestor } from '../../data/collaborationRequests';
+import { Entrepreneur } from "../../types";
 
 export const InvestorDashboard: React.FC = () => {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [entrepreneurs, setEntrepreneurs] = useState<Entrepreneur[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch real entrepreneurs from database
+  React.useEffect(() => {
+    const fetchStartups = async () => {
+      try {
+        const token = localStorage.getItem("business_nexus_token");// Fetching token for auth route
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/users/entrepreneurs`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setEntrepreneurs(data);
+        } else {
+          console.error("Failed to fetch startups");
+        }
+      } catch (error) {
+        console.error("Network error while fetching startups", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchStartups();
+    }
+  }, [user]);
+
+  // Prevent rendering filters and UI until data arrives
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64 text-gray-500">
+        Loading startups...
+      </div>
+    );
+  }
   
   if (!user) return null;
   

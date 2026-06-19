@@ -1,5 +1,5 @@
 // EntrepreneurDashboard.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
@@ -10,20 +10,46 @@ import { InvestorCard } from '../../components/investor/InvestorCard';
 import { useAuth } from '../../context/AuthContext';
 import { CollaborationRequest } from '../../types';
 import { getRequestsForEntrepreneur } from '../../data/collaborationRequests';
-import { investors } from '../../data/users';
+
 
 export const EntrepreneurDashboard: React.FC = () => {
   const { user } = useAuth();
   const [collaborationRequests, setCollaborationRequests] = useState<CollaborationRequest[]>([]);
-  const [recommendedInvestors] = useState(investors.slice(0, 3));
-  
-  useEffect(() => {
+  const [recommendedInvestors, setRecommendedInvestors] = useState<any[]>([]);
+
+  React.useEffect(() => {
     if (user) {
-      // Load collaboration requests
+      // Load collaboration requests (Existing logic)
       const requests = getRequestsForEntrepreneur(user.id);
       setCollaborationRequests(requests);
+
+      // Fetch real recommended investors from database
+      const fetchInvestors = async () => {
+        try {
+          const token = localStorage.getItem("business_nexus_token");// Fetching token for auth route
+          const response = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL}/users/investors`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            // Slice to keep UI consistent (showing only top 3)
+            setRecommendedInvestors(data.slice(0, 3));
+          }
+        } catch (error) {
+          console.error("Network error while fetching investors", error);
+        }
+      };
+
+      fetchInvestors();
     }
   }, [user]);
+  
   
   const handleRequestStatusUpdate = (requestId: string, status: 'accepted' | 'rejected') => {
     setCollaborationRequests(prevRequests => 
