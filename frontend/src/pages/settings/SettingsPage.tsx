@@ -10,6 +10,7 @@ import { useAuth } from "../../context/AuthContext";
 export const SettingsPage: React.FC = () => {
   const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fallback to empty string for safety
   const profile = (user as any) || {};
@@ -19,57 +20,87 @@ export const SettingsPage: React.FC = () => {
   // Single source of truth for form data
   const [formData, setFormData] = useState({
     name: profile?.name || "",
-    bio: profile?.bio || "",
+    bio: "",
 
     // Entrepreneur specific
-    startupName: profile?.startupName || profile?.startup_name || "",
-    industry: profile?.industry || "",
-    location: profile?.location || "",
-    foundedYear: profile?.foundedYear || profile?.founded_year || "",
-    teamSize: profile?.teamSize || profile?.team_size || "",
-    pitchSummary: profile?.pitchSummary || profile?.pitch_summary || "",
-    fundingNeeded: profile?.fundingNeeded || profile?.funding_needed || "",
+    startupName: "",
+    industry: "",
+    location: "",
+    foundedYear: "",
+    teamSize: "",
+    pitchSummary: "",
+    fundingNeeded: "",
 
     // Investor specific
-    minimumInvestment:
-      profile?.minimumInvestment || profile?.minimum_investment || "",
-    maximumInvestment:
-      profile?.maximumInvestment || profile?.maximum_investment || "",
-    investmentInterests: (
-      profile?.investmentInterests ||
-      profile?.investment_interests ||
-      []
-    ).join(", "),
+    minimumInvestment: "",
+    maximumInvestment: "",
+    investmentInterests: "",
   });
 
-  // Sync state if context user changes after initial render
+  // CRITICAL FIX: Fetch full profile data from backend on component mount
   useEffect(() => {
-    if (user) {
-      const p = user as any;
-      setFormData((prev) => ({
-        ...prev,
-        name: p.name || "",
-        bio: p.bio || "",
-        startupName: p.startupName || p.startup_name || prev.startupName,
-        industry: p.industry || prev.industry,
-        location: p.location || prev.location,
-        foundedYear: p.foundedYear || p.founded_year || prev.foundedYear,
-        teamSize: p.teamSize || p.team_size || prev.teamSize,
-        pitchSummary: p.pitchSummary || p.pitch_summary || prev.pitchSummary,
-        fundingNeeded:
-          p.fundingNeeded || p.funding_needed || prev.fundingNeeded,
-        minimumInvestment:
-          p.minimumInvestment || p.minimum_investment || prev.minimumInvestment,
-        maximumInvestment:
-          p.maximumInvestment || p.maximum_investment || prev.maximumInvestment,
-        investmentInterests:
-          (p.investmentInterests || p.investment_interests || []).join(", ") ||
-          prev.investmentInterests,
-      }));
-    }
-  }, [user]);
+    const fetchFullProfile = async () => {
+      if (!user?.id) return;
+
+      try {
+        const token = localStorage.getItem("business_nexus_token");
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/users/profile/${user.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          // Pre-fill the form with actual database values
+          setFormData((prev) => ({
+            ...prev,
+            name: data.name || prev.name,
+            bio: data.bio || "",
+            location: data.location || "",
+
+            // Entrepreneur mapping
+            startupName: data.startupName || data.startup_name || "",
+            industry: data.industry || "",
+            foundedYear: data.foundedYear || data.founded_year || "",
+            teamSize: data.teamSize || data.team_size || "",
+            pitchSummary: data.pitchSummary || data.pitch_summary || "",
+            fundingNeeded: data.fundingNeeded || data.funding_needed || "",
+
+            // Investor mapping
+            minimumInvestment:
+              data.minimumInvestment || data.minimum_investment || "",
+            maximumInvestment:
+              data.maximumInvestment || data.maximum_investment || "",
+            investmentInterests: (
+              data.investmentInterests ||
+              data.investment_interests ||
+              []
+            ).join(", "),
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch complete profile data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFullProfile();
+  }, [user?.id]);
 
   if (!user) return null;
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   // Universal Input Handler
   const handleChange = (
@@ -406,4 +437,4 @@ export const SettingsPage: React.FC = () => {
       </div>
     </div>
   );
-};;
+};

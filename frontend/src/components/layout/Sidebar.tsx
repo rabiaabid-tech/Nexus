@@ -6,6 +6,7 @@ import {
   Bell, FileText, Settings, HelpCircle
 } from 'lucide-react';
 
+
 interface SidebarItemProps {
   to: string;
   icon: React.ReactNode;
@@ -54,7 +55,10 @@ export const Sidebar: React.FC = () => {
     { to: '/deals', icon: <FileText size={20} />, text: 'Deals' },
   ];
   
-  const sidebarItems = user.role === 'entrepreneur' ? entrepreneurItems : investorItems;
+  const sidebarItems =
+    user?.role?.toLowerCase() === "entrepreneur"
+      ? entrepreneurItems
+      : investorItems;
   
   // Common items at the bottom
   const commonItems = [

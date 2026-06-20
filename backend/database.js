@@ -2,10 +2,13 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false // Required for Neon Cloud connections
-    }
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, 
+  },
+  keepAlive: true,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 30000,
 });
 
 pool.on("error", (err, client) => {
@@ -19,8 +22,8 @@ pool
   .connect()
   .then((client) => {
     console.log("Cloud PostgreSQL (Neon) connected successfully.");
-    client.release(); 
+    client.release();
   })
-  .catch((err) => console.error("Database connection error:", err.stack));
+  .catch((err) => console.error("Database connection error:", err.message));
 
 module.exports = pool;

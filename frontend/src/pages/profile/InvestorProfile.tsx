@@ -1,4 +1,3 @@
-// InvestorProfile.tsx
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
@@ -14,6 +13,7 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { useAuth } from "../../context/AuthContext";
+import { ScheduleMeetingModal } from "../../components/meetings/ScheduleMeetingModal";
 
 export const InvestorProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +21,7 @@ export const InvestorProfile: React.FC = () => {
 
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
 
   // REAL DATA FETCHING LOGIC
   useEffect(() => {
@@ -138,9 +139,19 @@ export const InvestorProfile: React.FC = () => {
 
           <div className="mt-6 sm:mt-0 flex flex-col sm:flex-row gap-2 justify-center sm:justify-end">
             {!isCurrentUser && (
-              <Link to={`/chat/${id}`}>
-                <Button leftIcon={<MessageCircle size={18} />}>Message</Button>
-              </Link>
+              <>
+                <Link to={`/chat/${id}`}>
+                  <Button
+                    variant="outline"
+                    leftIcon={<MessageCircle size={18} />}
+                  >
+                    Message
+                  </Button>
+                </Link>
+                <Button onClick={() => setIsMeetingModalOpen(true)}>
+                  Schedule Meeting
+                </Button>
+              </>
             )}
 
             {isCurrentUser && (
@@ -393,6 +404,12 @@ export const InvestorProfile: React.FC = () => {
           </Card>
         </div>
       </div>
+      <ScheduleMeetingModal
+        isOpen={isMeetingModalOpen}
+        onClose={() => setIsMeetingModalOpen(false)}
+        receiverId={id || ""}
+        receiverName={name}
+      />
     </div>
   );
 };

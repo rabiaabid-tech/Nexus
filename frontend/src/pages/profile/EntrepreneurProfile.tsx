@@ -16,6 +16,7 @@ import { Button } from "../../components/ui/Button";
 import { Card, CardBody, CardHeader } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { useAuth } from "../../context/AuthContext";
+import { ScheduleMeetingModal } from "../../components/meetings/ScheduleMeetingModal";
 
 export const EntrepreneurProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,7 @@ export const EntrepreneurProfile: React.FC = () => {
 
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
 
   // REAL DATA FETCHING LOGIC
   useEffect(() => {
@@ -104,9 +106,6 @@ export const EntrepreneurProfile: React.FC = () => {
   const isInvestor = currentUser?.role === "Investor";
   const hasRequestedCollaboration = false;
 
-  const handleSendRequest = () => {
-    alert("Backend API for collaboration requests is not connected yet.");
-  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -163,7 +162,7 @@ export const EntrepreneurProfile: React.FC = () => {
                   <Button
                     leftIcon={<Send size={18} />}
                     disabled={hasRequestedCollaboration}
-                    onClick={handleSendRequest}
+                    onClick={() => setIsMeetingModalOpen(true)}
                   >
                     {hasRequestedCollaboration
                       ? "Request Sent"
@@ -439,7 +438,10 @@ export const EntrepreneurProfile: React.FC = () => {
                   </p>
 
                   {!hasRequestedCollaboration ? (
-                    <Button className="mt-3 w-full" onClick={handleSendRequest}>
+                    <Button
+                      className="mt-3 w-full"
+                      onClick={() => setIsMeetingModalOpen(true)}
+                    >
                       Request Collaboration
                     </Button>
                   ) : (
@@ -453,6 +455,12 @@ export const EntrepreneurProfile: React.FC = () => {
           </Card>
         </div>
       </div>
+      <ScheduleMeetingModal
+        isOpen={isMeetingModalOpen}
+        onClose={() => setIsMeetingModalOpen(false)}
+        receiverId={id || ""}
+        receiverName={name}
+      />
     </div>
   );
 };

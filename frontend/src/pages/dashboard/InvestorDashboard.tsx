@@ -10,6 +10,7 @@ import { EntrepreneurCard } from '../../components/entrepreneur/EntrepreneurCard
 import { useAuth } from '../../context/AuthContext';
 import { getRequestsFromInvestor } from '../../data/collaborationRequests';
 import { Entrepreneur } from "../../types";
+import { MeetingWidget } from "../../components/meetings/MeetingWidget";
 
 export const InvestorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -207,6 +208,13 @@ export const InvestorDashboard: React.FC = () => {
             </div>
           </CardBody>
         </Card>
+      </div>
+      {/* Meeting Schedule Section */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">
+          Meeting Schedule & Requests
+        </h2>
+        <MeetingWidget />
       </div>
 
       {/* Entrepreneurs grid */}

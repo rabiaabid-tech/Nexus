@@ -32,7 +32,7 @@ export const EntrepreneursPage: React.FC = () => {
 
         if (response.ok) {
           const data = await response.json();
-          setEntrepreneurs(data); // Real data set ho gaya
+          setEntrepreneurs(data); 
         } else {
           console.error("Failed to fetch startups");
         }
