@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 
 const ENCRYPTION_KEY =
-  process.env.ENCRYPTION_KEY || "12345678901234567890123456789012";
+  process.env.ENCRYPTION_KEY;
 const IV_LENGTH = 16;
 
 function encrypt(text) {
