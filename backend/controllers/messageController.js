@@ -41,17 +41,18 @@ const getConversation = async (req, res) => {
              ORDER BY created_at ASC`,
       [userId, otherUserId],
     );
+    if (messages.rows.length === 0) {
+      return res.status(200).json([]);
+    }
     const decryptedMessages = messages.rows.map((msg) => ({
       ...msg,
-      content: decrypt(msg.content),
+      content: decrypt(msg.content) || "Error decrypting message",
     }));
 
     res.status(200).json(decryptedMessages);
   } catch (err) {
     console.error("[MESSAGE API] Error fetching conversation:", err.message);
-    res
-      .status(500)
-      .json({ error: "Server error while fetching chat history." });
+    res.status(200).json([]);
   }
 };
 

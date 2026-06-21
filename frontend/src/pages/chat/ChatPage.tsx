@@ -34,6 +34,10 @@ export const ChatPage: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isLoadingContacts, setIsLoadingContacts] = useState(true);
 
+  // Separate loading state for the active chat window, so a failed/slow
+  // history fetch can never leave the UI permanently stuck on "Loading..."
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
   // 1. CORE LIFECYCLE: Fetch Contacts & Global Socket Connection
@@ -107,18 +111,31 @@ export const ChatPage: React.FC = () => {
     if (!currentUser || !userId) return;
 
     const fetchChatHistory = async () => {
+      setIsLoadingMessages(true);
       try {
         const token = localStorage.getItem("business_nexus_token");
         const response = await fetch(
           `${import.meta.env.VITE_API_BASE_URL}/messages/${userId}`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Cache-Control": "no-cache",
+            },
+          },
         );
+
         if (response.ok) {
           const data = await response.json();
-          setMessages(data);
+          // Backend se empty array aaye ya data, dono safely handle honge
+          setMessages(Array.isArray(data) ? data : []);
+        } else {
+          setMessages([]); // Error ho toh empty list, UI hang nahi hogi
         }
       } catch (error) {
         console.error("Error fetching chat history:", error);
+        setMessages([]); // Crash na ho, bas empty dikhaye
+      } finally {
+        setIsLoadingMessages(false); // Loading state hamesha resolve hogi
       }
     };
 
@@ -127,15 +144,19 @@ export const ChatPage: React.FC = () => {
     if (!socket) return;
 
     const handleReceiveMessage = (data: any) => {
-      if (String(data.senderId) === String(userId)) {
+      // Safety check: yeh message current active conversation ke liye hai?
+      if (
+        String(data.senderId) === String(userId) ||
+        String(data.receiverId) === String(userId)
+      ) {
         setMessages((prev) => [
           ...prev,
           {
-            id: Date.now(),
+            id: data.id || Date.now(),
             sender_id: data.senderId,
             receiver_id: data.receiverId,
             content: data.content,
-            created_at: data.created_at,
+            created_at: data.created_at || new Date().toISOString(),
           },
         ]);
       }
@@ -184,7 +205,6 @@ export const ChatPage: React.FC = () => {
 
   if (!currentUser) return null;
 
-  // Derived, always-in-sync values: partner info comes from DB contacts,
   // online status comes from the independent live socket state
   const partnerInfo = contacts.find((c) => String(c.id) === String(userId));
   const isPartnerOnline = onlineUserIds.includes(String(userId));
@@ -225,7 +245,9 @@ export const ChatPage: React.FC = () => {
                 />
                 <div>
                   <h2 className="text-lg font-medium text-gray-900">
-                    {partnerInfo?.name || "Loading..."}
+                    {isLoadingContacts
+                      ? "Loading..."
+                      : partnerInfo?.name || "Unknown User"}
                   </h2>
                   <p className="text-sm text-gray-500">
                     {isPartnerOnline ? "Online" : "Offline"}
@@ -262,20 +284,29 @@ export const ChatPage: React.FC = () => {
             </div>
 
             <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <ChatMessage
-                    key={message.id}
-                    message={message}
-                    isCurrentUser={
-                      String(message.sender_id) === String(currentUser.id)
-                    }
-                    currentUserAvatar={currentUser.avatarUrl || ""}
-                    otherUserAvatar={partnerInfo?.avatar_url || ""}
+              {isLoadingMessages ? (
+                <div className="h-full flex items-center justify-center">
+                  <Loader2
+                    className="animate-spin text-primary-600"
+                    size={24}
                   />
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <ChatMessage
+                      key={message.id}
+                      message={message}
+                      isCurrentUser={
+                        String(message.sender_id) === String(currentUser.id)
+                      }
+                      currentUserAvatar={currentUser.avatarUrl || ""}
+                      otherUserAvatar={partnerInfo?.avatar_url || ""}
+                    />
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
             </div>
 
             {/* Professional WhatsApp Style Input Area */}
@@ -348,4 +379,4 @@ export const ChatPage: React.FC = () => {
       </div>
     </div>
   );
-};;
+};
