@@ -23,7 +23,16 @@ const PORT = process.env.PORT || 5000;
 // ==========================================
 // MIDDLEWARE CONFIGURATION
 // ==========================================
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://nexus-plateform-taupe.vercel.app/",
+      "http://localhost:5173",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  }),
+);
 app.use(compression()); // GZip compression for API response optimization
 app.use(express.json({ limit: "10mb" })); // Allowed large payload for base64 signatures
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
