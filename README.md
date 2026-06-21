@@ -21,6 +21,10 @@ Business Nexus is a secure, real-time collaboration platform designed to connect
 - **Role-Based Access** — Specialized dashboards for Investors and Entrepreneurs.
 - **Secure Authentication** — JWT-based session management.
 - **Responsive UI** — Optimized dashboard interfaces with consistent design principles.
+- **Meeting Scheduling** — Comprehensive engine for requesting and confirming pitch   meetings.
+- **Document Chamber (E-Signature)** — Digital signing module using HTML5 Canvas for legal verification.
+
+## 🏗 Architecture & Flow
 
 ## ⚙️ Installation & Local Setup
 
