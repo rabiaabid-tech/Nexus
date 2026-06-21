@@ -131,7 +131,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     toast.success("Logged out successfully");
   };
 
-  // Fixed unused 'userId' by adding underscore
   const updateProfile = async (
     _userId: string,
     updates: Partial<User>,

@@ -228,4 +228,4 @@ export const EntrepreneursPage: React.FC = () => {
       </div>
     </div>
   );
-};;
+};

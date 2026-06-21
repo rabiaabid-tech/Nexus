@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Menu, X, Bell, MessageCircle, User, LogOut, Building2, CircleDollarSign } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
@@ -8,7 +8,7 @@ import { Button } from '../ui/Button';
 export const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
+
   
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -16,11 +16,10 @@ export const Navbar: React.FC = () => {
   
   const handleLogout = () => {
     logout();
-    navigate('/login');
   };
   
   // User dashboard route based on role
-  const dashboardRoute = user?.role === 'entrepreneur' 
+  const dashboardRoute = user?.role === 'Entrepreneur' 
     ? '/dashboard/entrepreneur' 
     : '/dashboard/investor';
   
@@ -31,7 +30,7 @@ export const Navbar: React.FC = () => {
   
   const navLinks = [
     {
-      icon: user?.role === 'entrepreneur' ? <Building2 size={18} /> : <CircleDollarSign size={18} />,
+      icon: user?.role === 'Entrepreneur' ? <Building2 size={18} /> : <CircleDollarSign size={18} />,
       text: 'Dashboard',
       path: dashboardRoute,
     },

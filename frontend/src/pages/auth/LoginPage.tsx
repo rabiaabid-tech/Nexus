@@ -24,7 +24,13 @@ export const LoginPage: React.FC = () => {
     try {
       await login(email, password, role);
       // Redirect based on user role
-      navigate(role === 'Entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
+     setTimeout(() => {
+       navigate(
+         role === "Entrepreneur"
+           ? "/dashboard/entrepreneur"
+           : "/dashboard/investor",
+       );
+     }, 100);
     } catch (err) {
       setError((err as Error).message);
       setIsLoading(false);

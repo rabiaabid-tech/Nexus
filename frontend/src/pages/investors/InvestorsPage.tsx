@@ -28,7 +28,7 @@ export const InvestorsPage: React.FC = () => {
 
         if (response.ok) {
           const data = await response.json();
-          setInvestors(data); // Real data set ho gaya
+          setInvestors(data); 
         } else {
           console.error("Failed to fetch investors");
         }
@@ -214,4 +214,4 @@ export const InvestorsPage: React.FC = () => {
       </div>
     </div>
   );
-};;
+};

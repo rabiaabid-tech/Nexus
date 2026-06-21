@@ -5,7 +5,7 @@ export const entrepreneurs: Entrepreneur[] = [
     id: 'e1',
     name: 'Sarah Johnson',
     email: 'sarah@techwave.io',
-    role: 'entrepreneur',
+    role: 'Entrepreneur',
     avatarUrl: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
     bio: 'Serial entrepreneur with 10+ years of experience in SaaS and fintech.',
     startupName: 'TechWave AI',
@@ -22,7 +22,7 @@ export const entrepreneurs: Entrepreneur[] = [
     id: 'e2',
     name: 'David Chen',
     email: 'david@greenlife.co',
-    role: 'entrepreneur',
+    role: 'Entrepreneur',
     avatarUrl: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg',
     bio: 'Environmental scientist turned entrepreneur. Passionate about sustainable solutions.',
     startupName: 'GreenLife Solutions',
@@ -39,7 +39,7 @@ export const entrepreneurs: Entrepreneur[] = [
     id: 'e3',
     name: 'Maya Patel',
     email: 'maya@healthpulse.com',
-    role: 'entrepreneur',
+    role: 'Entrepreneur',
     avatarUrl: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg',
     bio: 'Former healthcare professional with an MBA. Building tech to improve patient care.',
     startupName: 'HealthPulse',
@@ -56,7 +56,7 @@ export const entrepreneurs: Entrepreneur[] = [
     id: 'e4',
     name: 'James Wilson',
     email: 'james@urbanfarm.io',
-    role: 'entrepreneur',
+    role: 'Entrepreneur',
     avatarUrl: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg',
     bio: 'Agricultural engineer focused on urban farming solutions and food security.',
     startupName: 'UrbanFarm',
@@ -76,7 +76,7 @@ export const investors: Investor[] = [
     id: 'i1',
     name: 'Michael Rodriguez',
     email: 'michael@vcinnovate.com',
-    role: 'investor',
+    role: 'Investor',
     avatarUrl: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
     bio: 'Early-stage investor with focus on B2B SaaS and fintech. Previously founded and exited two startups.',
     investmentInterests: ['FinTech', 'SaaS', 'AI/ML'],
@@ -92,7 +92,7 @@ export const investors: Investor[] = [
     id: 'i2',
     name: 'Jennifer Lee',
     email: 'jennifer@impactvc.org',
-    role: 'investor',
+    role: 'Investor',
     avatarUrl: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg',
     bio: 'Impact investor focused on climate tech, sustainable agriculture, and clean energy.',
     investmentInterests: ['CleanTech', 'AgTech', 'Sustainability'],
@@ -108,7 +108,7 @@ export const investors: Investor[] = [
     id: 'i3',
     name: 'Robert Torres',
     email: 'robert@healthventures.com',
-    role: 'investor',
+    role: 'Investor',
     avatarUrl: 'https://images.pexels.com/photos/834863/pexels-photo-834863.jpeg',
     bio: 'Healthcare-focused investor with medical background. Looking for innovations in patient care and biotech.',
     investmentInterests: ['HealthTech', 'BioTech', 'Medical Devices'],
@@ -131,6 +131,6 @@ export const findUserById = (id: string) => {
 };
 
 // Helper function to get a user by role
-export const getUsersByRole = (role: 'entrepreneur' | 'investor') => {
+export const getUsersByRole = (role: 'Entrepreneur' | 'Investor') => {
   return users.filter(user => user.role === role);
 };
